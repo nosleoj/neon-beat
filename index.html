@@ -1,159 +1,476 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Neon Beats</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background: radial-gradient(circle at center, #1a0026, #0b0013);
-      color: #fff;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      height: 100vh;
-    }
-    header {
-      text-align: center;
-      margin-top: 20px;
-    }
-    header h1 {
-      color: #b56cff;
-      font-size: 2rem;
-      text-shadow: 0 0 10px #b56cff;
-    }
-    input {
-      width: 80%;
-      padding: 10px;
-      border: none;
-      border-radius: 25px;
-      margin-top: 10px;
-      font-size: 1rem;
-      outline: none;
-      text-align: center;
-      background-color: #250036;
-      color: #fff;
-      box-shadow: 0 0 10px #b56cff;
-    }
-    #results {
-      flex: 1;
-      width: 100%;
-      overflow-y: auto;
-      margin-top: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 15px;
-    }
-    .track {
-      background: rgba(255,255,255,0.05);
-      border-radius: 15px;
-      padding: 10px;
-      width: 90%;
-      display: flex;
-      align-items: center;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    .track:hover {
-      background: rgba(181,108,255,0.1);
-      transform: scale(1.03);
-    }
-    .track img {
-      width: 60px;
-      height: 60px;
-      border-radius: 10px;
-      margin-right: 10px;
-    }
-    .info {
-      flex: 1;
-    }
-    .info h4 {
-      margin: 0;
-      font-size: 1rem;
-      color: #fff;
-    }
-    .info p {
-      margin: 0;
-      font-size: 0.8rem;
-      color: #b56cff;
-    }
-    #player {
-      width: 100%;
-      background: #150021;
-      box-shadow: 0 -2px 20px #b56cff44;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    #player iframe {
-      width: 90%;
-      height: 200px;
-      border-radius: 10px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MIUI Notes Clone</title>
+    
+    <!-- Tailwind CSS (para o estilo visual sem escrever muito CSS manual) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons (ícones leves e bonitos) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Fontes Google (Roboto/Inter para parecer nativo) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f6f6f6; /* Cor de fundo MIUI */
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        
+        /* Estilização da Barra de Rolagem */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+        /* Animações simples */
+        .fade-in { animation: fadeIn 0.2s ease-in-out; }
+        .slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .note-card {
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .note-card:active {
+            transform: scale(0.98);
+        }
+        
+        /* Checkbox customizado */
+        .custom-checkbox {
+            appearance: none;
+            background-color: transparent;
+            margin: 0;
+        }
+    </style>
 </head>
-<body>
-  <header>
-    <h1>🎧 Neon Beats</h1>
-    <input type="text" id="searchInput" placeholder="Buscar qualquer música..." />
-  </header>
-  <div id="results"></div>
-  <div id="player">
-    <iframe id="ytplayer" src="" frameborder="0" allowfullscreen></iframe>
-  </div>
+<body class="h-screen flex flex-col text-slate-800 overflow-hidden">
 
-  <script>
-    // 🔑 COLE SUA CHAVE DE API AQUI:
-    const API_KEY = "AIzaSyB084z3SLKhMkp8dvbvksWtL5bU3dqdQqc"; // exemplo: "AIzaSyBswQfbvo..."
+    <!-- HEADER -->
+    <header class="flex justify-between items-center px-6 pt-8 pb-4 z-10 bg-[#f6f6f6]">
+        <h1 id="page-title" class="text-4xl font-light tracking-tight">Anotações</h1>
+        <button class="p-2 rounded-full active:bg-gray-200 text-slate-600">
+            <i data-lucide="settings" width="24"></i>
+        </button>
+    </header>
 
-    const searchInput = document.getElementById("searchInput");
-    const resultsDiv = document.getElementById("results");
-    const ytplayer = document.getElementById("ytplayer");
+    <!-- MAIN CONTENT AREA -->
+    <main id="main-container" class="flex-1 overflow-y-auto px-4 pb-24 relative">
+        
+        <!-- Loading State -->
+        <div id="loading" class="absolute inset-0 flex items-center justify-center bg-[#f6f6f6] z-20">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-400"></div>
+        </div>
 
-    async function searchMusic(query) {
-      resultsDiv.innerHTML = "<p>🔎 Buscando...</p>";
-      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&key=${API_KEY}&maxResults=10`;
-      const response = await fetch(url);
-      const data = await response.json();
+        <!-- NOTES VIEW -->
+        <div id="notes-view" class="space-y-3 fade-in">
+            <!-- Empty State -->
+            <div id="empty-notes" class="hidden flex flex-col items-center justify-center h-[50vh] opacity-40">
+                <div class="w-20 h-24 bg-amber-100 rounded-lg flex items-center justify-center mb-4 border-2 border-amber-200">
+                    <i data-lucide="file-text" class="text-amber-400" width="40" height="40"></i>
+                </div>
+                <p class="text-slate-500 text-lg font-light">Nenhuma anotação aqui ainda</p>
+            </div>
+            
+            <!-- Grid de Notas -->
+            <div id="notes-grid" class="grid grid-cols-2 gap-3">
+                <!-- As notas serão inseridas aqui via JS -->
+            </div>
+        </div>
 
-      if (!data.items || data.items.length === 0) {
-        resultsDiv.innerHTML = "<p>Nenhuma música encontrada 😢</p>";
-        return;
-      }
+        <!-- TASKS VIEW (Hidden by default) -->
+        <div id="tasks-view" class="hidden space-y-1 fade-in">
+             <!-- Empty State -->
+             <div id="empty-tasks" class="hidden flex flex-col items-center justify-center h-[50vh] opacity-40">
+                <div class="w-20 h-24 bg-amber-100 rounded-lg flex items-center justify-center mb-4 border-2 border-amber-200">
+                    <i data-lucide="check-square" class="text-amber-400" width="40" height="40"></i>
+                </div>
+                <p class="text-slate-500 text-lg font-light">Nenhuma tarefa aqui ainda</p>
+            </div>
 
-      resultsDiv.innerHTML = "";
-      data.items.forEach(item => {
-   annelTitle;
-        const thumb = item.snippet.thumbnails.medium.url;
+            <!-- Lista de Tarefas Pendentes -->
+            <div id="tasks-list" class="space-y-3"></div>
 
-        const div = document.createElement("div");
-        div.className = "track";
-        div.innerHTML = `
-          <img src="${thumb}" alt="">
-          <div class="info">
-            <h4>${title}</h4>
-            <p>${channel}</p>
-          </div>
-        `;
-        div.onclick = () => playVideo(videoId);
-        resultsDiv.appendChild(div);
-      });
-    }
+            <!-- Lista de Tarefas Concluídas -->
+            <div id="completed-section" class="hidden mt-6">
+                <button id="toggle-completed" class="flex items-center gap-2 text-slate-400 text-sm font-medium px-2 mb-2 w-full">
+                    <i data-lucide="chevron-down" width="16"></i>
+                    <span>Concluído <span id="completed-count">0</span></span>
+                </button>
+                <div id="completed-list" class="space-y-3 opacity-60 hidden"></div>
+            </div>
+        </div>
+    </main>
 
-    function playVideo(videoId) {
-      ytplayer.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-    }
+    <!-- FAB (Floating Action Button) -->
+    <div class="fixed bottom-20 right-6 z-20">
+        <button id="fab-add" class="w-14 h-14 bg-amber-400 rounded-full shadow-lg flex items-center justify-center text-white active:bg-amber-500 active:scale-95 transition-all shadow-amber-400/30">
+            <i data-lucide="plus" width="32" stroke-width="2.5"></i>
+        </button>
+    </div>
 
-    searchInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && searchInput.value.trim() !== "") {
-        searchMusic(searchInput.value.trim());
-      }
-    });
-  </script>
+    <!-- BOTTOM NAVIGATION -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 py-3 px-10 flex justify-between items-center pb-6 z-10">
+        <button id="nav-notes" class="flex flex-col items-center gap-1 text-amber-500 transition-colors">
+            <div class="p-1 rounded-lg bg-amber-50" id="icon-bg-notes">
+                <i data-lucide="file-text" width="24"></i>
+            </div>
+            <span class="text-xs font-medium">Anotações</span>
+        </button>
+
+        <button id="nav-tasks" class="flex flex-col items-center gap-1 text-slate-400 transition-colors">
+            <div class="p-1 rounded-lg" id="icon-bg-tasks">
+                <i data-lucide="check-square" width="24"></i>
+            </div>
+            <span class="text-xs font-medium">Tarefas</span>
+        </button>
+    </nav>
+
+    <!-- MODAL: ADD NOTE -->
+    <div id="modal-note" class="fixed inset-0 bg-white z-50 flex flex-col hidden slide-up">
+        <div class="flex justify-between items-center p-4 border-b border-gray-100">
+            <button id="close-note-modal" class="text-slate-500 p-2 rounded-full active:bg-gray-100">
+                <i data-lucide="x" width="24"></i>
+            </button>
+            <h2 class="font-medium text-lg">Nova Anotação</h2>
+            <button id="save-note-btn" class="text-amber-500 font-bold px-3 py-1 rounded active:bg-amber-50">
+                Salvar
+            </button>
+        </div>
+        <div class="flex-1 p-6 flex flex-col gap-4">
+            <input id="note-title-input" type="text" placeholder="Título" class="text-2xl font-bold text-slate-800 placeholder:text-slate-300 outline-none bg-transparent">
+            <span class="text-xs text-slate-400" id="note-date-display"></span>
+            <textarea id="note-content-input" placeholder="Comece a escrever..." class="flex-1 resize-none text-lg text-slate-600 placeholder:text-slate-300 outline-none bg-transparent leading-relaxed"></textarea>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD TASK (Bottom Sheet style) -->
+    <div id="modal-task-backdrop" class="fixed inset-0 bg-black/20 z-40 backdrop-blur-sm hidden transition-opacity"></div>
+    <div id="modal-task" class="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 p-6 pb-8 shadow-2xl hidden slide-up">
+        <div class="flex items-start gap-3">
+            <div class="mt-1 text-slate-300">
+                <div class="w-5 h-5 border-2 border-slate-300 rounded"></div>
+            </div>
+            <div class="flex-1">
+                <input id="task-input" type="text" placeholder="O que precisa ser feito?" class="w-full text-xl text-slate-800 placeholder:text-slate-300 outline-none bg-transparent mb-2">
+                <div class="flex items-center gap-2">
+                    <button class="bg-gray-100 text-slate-600 px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-2">
+                        <i data-lucide="clock" width="14"></i>
+                        Definir lembrete
+                    </button>
+                </div>
+            </div>
+            <button id="save-task-btn" class="text-amber-500 font-semibold text-sm uppercase tracking-wide pt-2 pl-2">
+                Concluído
+            </button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT -->
+    <script type="module">
+        // --- IMPORT FIREBASE ---
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, query, orderBy } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        // --- CONFIGURAÇÃO ---
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        let currentUser = null;
+        let currentTab = 'notes';
+
+        // --- UI ELEMENTS ---
+        const els = {
+            pageTitle: document.getElementById('page-title'),
+            notesView: document.getElementById('notes-view'),
+            tasksView: document.getElementById('tasks-view'),
+            navNotes: document.getElementById('nav-notes'),
+            navTasks: document.getElementById('nav-tasks'),
+            fab: document.getElementById('fab-add'),
+            loading: document.getElementById('loading'),
+            
+            // Notes
+            notesGrid: document.getElementById('notes-grid'),
+            emptyNotes: document.getElementById('empty-notes'),
+            modalNote: document.getElementById('modal-note'),
+            closeNoteModal: document.getElementById('close-note-modal'),
+            saveNoteBtn: document.getElementById('save-note-btn'),
+            noteTitleInput: document.getElementById('note-title-input'),
+            noteContentInput: document.getElementById('note-content-input'),
+            
+            // Tasks
+            tasksList: document.getElementById('tasks-list'),
+            emptyTasks: document.getElementById('empty-tasks'),
+            completedSection: document.getElementById('completed-section'),
+            completedList: document.getElementById('completed-list'),
+            toggleCompleted: document.getElementById('toggle-completed'),
+            completedCount: document.getElementById('completed-count'),
+            modalTask: document.getElementById('modal-task'),
+            modalTaskBackdrop: document.getElementById('modal-task-backdrop'),
+            saveTaskBtn: document.getElementById('save-task-btn'),
+            taskInput: document.getElementById('task-input')
+        };
+
+        // --- INITIALIZE ICONS ---
+        lucide.createIcons();
+
+        // --- AUTH & DATA ---
+        async function initAuth() {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        }
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                els.loading.classList.add('hidden');
+                subscribeNotes();
+                subscribeTasks();
+            }
+        });
+
+        // --- DATA SUBSCRIPTIONS ---
+        function subscribeNotes() {
+            const q = query(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'notes'), orderBy('createdAt', 'desc'));
+            onSnapshot(q, (snapshot) => {
+                const notes = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+                renderNotes(notes);
+            });
+        }
+
+        function subscribeTasks() {
+            const q = query(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'), orderBy('createdAt', 'desc'));
+            onSnapshot(q, (snapshot) => {
+                const tasks = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+                renderTasks(tasks);
+            });
+        }
+
+        // --- RENDERING ---
+        function formatDate(timestamp) {
+            if(!timestamp) return '';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date();
+            const now = new Date();
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            
+            if(date.toDateString() === now.toDateString()) return `Hoje ${hours}:${minutes}`;
+            return `${date.getDate()}/${date.getMonth()+1} ${hours}:${minutes}`;
+        }
+
+        function renderNotes(notes) {
+            els.notesGrid.innerHTML = '';
+            if (notes.length === 0) {
+                els.emptyNotes.classList.remove('hidden');
+            } else {
+                els.emptyNotes.classList.add('hidden');
+                notes.forEach(note => {
+                    const div = document.createElement('div');
+                    div.className = 'bg-white p-4 rounded-2xl shadow-sm flex flex-col justify-between h-40 note-card relative group';
+                    div.innerHTML = `
+                        <div>
+                            <h3 class="font-semibold text-lg mb-1 truncate">${note.title || "Sem título"}</h3>
+                            <p class="text-slate-500 text-sm line-clamp-3 leading-relaxed">${note.content}</p>
+                        </div>
+                        <div class="flex justify-between items-end mt-2">
+                            <span class="text-xs text-slate-400 font-medium">${formatDate(note.createdAt)}</span>
+                            <button class="text-slate-300 active:text-red-400 p-1 btn-delete-note" data-id="${note.id}">
+                                <i data-lucide="trash-2" width="16"></i>
+                            </button>
+                        </div>
+                    `;
+                    // Add delete listener
+                    div.querySelector('.btn-delete-note').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'notes', note.id));
+                    });
+                    els.notesGrid.appendChild(div);
+                });
+                lucide.createIcons();
+            }
+        }
+
+        function renderTasks(tasks) {
+            els.tasksList.innerHTML = '';
+            els.completedList.innerHTML = '';
+            
+            const pending = tasks.filter(t => !t.completed);
+            const completed = tasks.filter(t => t.completed);
+
+            if (tasks.length === 0) {
+                els.emptyTasks.classList.remove('hidden');
+                els.completedSection.classList.add('hidden');
+            } else {
+                els.emptyTasks.classList.add('hidden');
+                
+                // Pending
+                pending.forEach(task => {
+                    const div = document.createElement('div');
+                    div.className = 'bg-white p-4 rounded-2xl shadow-sm flex items-center gap-4';
+                    div.innerHTML = `
+                        <button class="w-6 h-6 rounded border-2 border-slate-300 active:border-amber-400 flex items-center justify-center transition-colors btn-toggle" data-id="${task.id}"></button>
+                        <div class="flex-1">
+                            <span class="text-lg text-slate-800 block">${task.text}</span>
+                            <div class="flex items-center gap-1 mt-0.5 text-amber-600 text-xs font-medium">
+                                <i data-lucide="clock" width="12"></i>
+                                <span>${formatDate(task.createdAt)}</span>
+                            </div>
+                        </div>
+                    `;
+                    div.querySelector('.btn-toggle').addEventListener('click', () => toggleTask(task));
+                    els.tasksList.appendChild(div);
+                });
+
+                // Completed
+                if (completed.length > 0) {
+                    els.completedSection.classList.remove('hidden');
+                    els.completedCount.innerText = completed.length;
+                    completed.forEach(task => {
+                        const div = document.createElement('div');
+                        div.className = 'bg-gray-100 p-4 rounded-2xl flex items-center gap-4';
+                        div.innerHTML = `
+                             <button class="w-6 h-6 rounded border-2 border-slate-300 bg-slate-300 flex items-center justify-center text-white btn-toggle" data-id="${task.id}">
+                                <i data-lucide="check-square" width="16"></i>
+                             </button>
+                             <div class="flex-1 flex justify-between items-center">
+                                <span class="text-lg text-slate-500 line-through decoration-slate-400">${task.text}</span>
+                                <button class="text-slate-400 active:text-red-400 btn-delete-task" data-id="${task.id}">
+                                    <i data-lucide="x" width="18"></i>
+                                </button>
+                             </div>
+                        `;
+                        div.querySelector('.btn-toggle').addEventListener('click', () => toggleTask(task));
+                        div.querySelector('.btn-delete-task').addEventListener('click', () => 
+                            deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', task.id))
+                        );
+                        els.completedList.appendChild(div);
+                    });
+                } else {
+                    els.completedSection.classList.add('hidden');
+                }
+                lucide.createIcons();
+            }
+        }
+
+        // --- ACTIONS ---
+        async function toggleTask(task) {
+            await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks', task.id), {
+                completed: !task.completed
+            });
+        }
+
+        // --- NAVIGATION ---
+        function switchTab(tab) {
+            currentTab = tab;
+            if (tab === 'notes') {
+                els.notesView.classList.remove('hidden');
+                els.tasksView.classList.add('hidden');
+                
+                els.pageTitle.innerText = 'Anotações';
+                
+                els.navNotes.classList.replace('text-slate-400', 'text-amber-500');
+                els.navTasks.classList.replace('text-amber-500', 'text-slate-400');
+                document.getElementById('icon-bg-notes').classList.add('bg-amber-50');
+                document.getElementById('icon-bg-tasks').classList.remove('bg-amber-50');
+            } else {
+                els.notesView.classList.add('hidden');
+                els.tasksView.classList.remove('hidden');
+                
+                els.pageTitle.innerText = 'Tarefas';
+                
+                els.navNotes.classList.replace('text-amber-500', 'text-slate-400');
+                els.navTasks.classList.replace('text-slate-400', 'text-amber-500');
+                document.getElementById('icon-bg-notes').classList.remove('bg-amber-50');
+                document.getElementById('icon-bg-tasks').classList.add('bg-amber-50');
+            }
+            lucide.createIcons();
+        }
+
+        els.navNotes.onclick = () => switchTab('notes');
+        els.navTasks.onclick = () => switchTab('tasks');
+
+        // --- MODALS ---
+        // Open
+        els.fab.onclick = () => {
+            if (currentTab === 'notes') {
+                els.modalNote.classList.remove('hidden');
+                els.noteDateDisplay.innerText = formatDate(new Date());
+                els.noteTitleInput.focus();
+            } else {
+                els.modalTask.classList.remove('hidden');
+                els.modalTaskBackdrop.classList.remove('hidden');
+                els.taskInput.focus();
+            }
+        };
+
+        // Close Note
+        els.closeNoteModal.onclick = () => els.modalNote.classList.add('hidden');
+        
+        // Close Task
+        els.modalTaskBackdrop.onclick = () => {
+            els.modalTask.classList.add('hidden');
+            els.modalTaskBackdrop.classList.add('hidden');
+        };
+
+        // Save Note
+        els.saveNoteBtn.onclick = async () => {
+            const title = els.noteTitleInput.value.trim();
+            const content = els.noteContentInput.value.trim();
+            if (title || content) {
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'notes'), {
+                    title, content, createdAt: serverTimestamp()
+                });
+                els.noteTitleInput.value = '';
+                els.noteContentInput.value = '';
+            }
+            els.modalNote.classList.add('hidden');
+        };
+
+        // Save Task
+        const saveTask = async () => {
+            const text = els.taskInput.value.trim();
+            if (text) {
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'tasks'), {
+                    text, completed: false, createdAt: serverTimestamp()
+                });
+                els.taskInput.value = '';
+                els.modalTask.classList.add('hidden');
+                els.modalTaskBackdrop.classList.add('hidden');
+            }
+        };
+        els.saveTaskBtn.onclick = saveTask;
+        els.taskInput.onkeydown = (e) => { if(e.key === 'Enter') saveTask(); };
+
+        // Toggle Completed Section
+        els.toggleCompleted.onclick = () => {
+            els.completedList.classList.toggle('hidden');
+            const icon = els.toggleCompleted.querySelector('svg');
+            if(els.completedList.classList.contains('hidden')) {
+                icon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>'; // Chevron Down
+            } else {
+                icon.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>'; // Chevron Up
+            }
+        };
+
+    </script>
 </body>
 </html>
